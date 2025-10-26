@@ -3,7 +3,7 @@
  * Plugin Name: Noah Affiliate
  * Plugin URI: https://sawahsolutions.com
  * Description: Smart affiliate management for product reviews with auto-linking and manual product insertion
- * Version: 1.0.2
+ * Version: 2.0.0
  * Author: Mohamed Sawah
  * Author URI: https://sawahsolutions.com
  * License: GPL v2 or later
@@ -17,7 +17,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('NOAH_AFFILIATE_VERSION', '1.0.2');
+define('NOAH_AFFILIATE_VERSION', '2.0.0');
 define('NOAH_AFFILIATE_PATH', plugin_dir_path(__FILE__));
 define('NOAH_AFFILIATE_URL', plugin_dir_url(__FILE__));
 define('NOAH_AFFILIATE_BASENAME', plugin_basename(__FILE__));
@@ -89,7 +89,6 @@ class Noah_Affiliate {
         require_once NOAH_AFFILIATE_PATH . 'includes/networks/class-awin.php';
         require_once NOAH_AFFILIATE_PATH . 'includes/networks/class-cj.php';
         require_once NOAH_AFFILIATE_PATH . 'includes/networks/class-rakuten.php';
-        require_once NOAH_AFFILIATE_PATH . 'includes/networks/class-firecrawl.php';
         
         // Admin classes
         if (is_admin()) {

@@ -33,8 +33,7 @@ class Noah_Affiliate_Product_Manager {
             'awin' => new Noah_Affiliate_Awin(),
             'cj' => new Noah_Affiliate_CJ(),
             'rakuten' => new Noah_Affiliate_Rakuten(),
-            'skimlinks' => new Noah_Affiliate_Skimlinks(),
-            'firecrawl' => new Noah_Affiliate_Firecrawl()
+            'skimlinks' => new Noah_Affiliate_Skimlinks()
         );
     }
     

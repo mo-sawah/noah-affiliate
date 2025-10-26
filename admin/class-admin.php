@@ -30,7 +30,6 @@ class Noah_Affiliate_Admin {
         add_action('wp_ajax_noah_search_products', array($this, 'ajax_search_products'));
         add_action('wp_ajax_noah_get_product', array($this, 'ajax_get_product'));
         add_action('wp_ajax_noah_test_connection', array($this, 'ajax_test_connection'));
-        add_action('wp_ajax_noah_get_firecrawl_countries', array($this, 'ajax_get_firecrawl_countries'));
     }
     
     /**
@@ -134,19 +133,13 @@ class Noah_Affiliate_Admin {
         
         $query = isset($_POST['query']) ? sanitize_text_field($_POST['query']) : '';
         $network = isset($_POST['network']) ? sanitize_text_field($_POST['network']) : '';
-        $country = isset($_POST['country']) ? sanitize_text_field($_POST['country']) : '';
         
         if (empty($query) || empty($network)) {
             wp_send_json_error(array('message' => 'Missing parameters'));
         }
         
-        $args = array('limit' => 10);
-        if (!empty($country)) {
-            $args['country'] = $country;
-        }
-        
         $product_manager = Noah_Affiliate_Product_Manager::get_instance();
-        $products = $product_manager->search_products($network, $query, $args);
+        $products = $product_manager->search_products($network, $query, array('limit' => 10));
         
         wp_send_json_success(array('products' => $products));
     }
@@ -202,27 +195,5 @@ class Noah_Affiliate_Admin {
         }
         
         wp_send_json_error($result);
-    }
-    
-    /**
-     * AJAX: Get Firecrawl available countries
-     */
-    public function ajax_get_firecrawl_countries() {
-        check_ajax_referer('noah_affiliate_admin', 'nonce');
-        
-        if (!current_user_can('edit_posts')) {
-            wp_send_json_error(array('message' => 'Insufficient permissions'));
-        }
-        
-        $product_manager = Noah_Affiliate_Product_Manager::get_instance();
-        $firecrawl = $product_manager->get_network('firecrawl');
-        
-        if (!$firecrawl) {
-            wp_send_json_error(array('message' => 'Firecrawl network not found'));
-        }
-        
-        $countries = $firecrawl->get_available_countries();
-        
-        wp_send_json_success(array('countries' => $countries));
     }
 }
