@@ -1,0 +1,388 @@
+/**
+ * Noah Affiliate Frontend Styles
+ * With SmartMag .s-light and .s-dark mode support
+ */
+
+/* Product Card Layout */
+.noah-product-card {
+    border: 1px solid;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 30px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    transition: all 0.3s ease;
+}
+
+.noah-product-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Light Mode */
+.s-light .noah-product-card {
+    background: #ffffff;
+    border-color: #e0e0e0;
+    color: #333333;
+}
+
+.s-light .noah-product-card:hover {
+    border-color: #0073aa;
+}
+
+/* Dark Mode */
+.s-dark .noah-product-card {
+    background: #1a1a1a;
+    border-color: #333333;
+    color: #e0e0e0;
+}
+
+.s-dark .noah-product-card:hover {
+    border-color: #0096dd;
+}
+
+/* Product Header */
+.noah-product-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+}
+
+.noah-product-image {
+    width: 200px;
+    height: 200px;
+    object-fit: cover;
+    border-radius: 4px;
+    flex-shrink: 0;
+}
+
+.s-light .noah-product-image {
+    border: 1px solid #e0e0e0;
+}
+
+.s-dark .noah-product-image {
+    border: 1px solid #333333;
+}
+
+.noah-product-content {
+    flex: 1;
+}
+
+.noah-product-title {
+    font-size: 22px;
+    font-weight: bold;
+    margin: 0 0 10px 0;
+    line-height: 1.3;
+}
+
+.s-light .noah-product-title {
+    color: #333333;
+}
+
+.s-dark .noah-product-title {
+    color: #ffffff;
+}
+
+/* Badge */
+.noah-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 10px;
+}
+
+.noah-badge.best-overall {
+    background: #0073aa;
+    color: #ffffff;
+}
+
+.noah-badge.best-budget {
+    background: #46b450;
+    color: #ffffff;
+}
+
+.noah-badge.best-premium {
+    background: #826eb4;
+    color: #ffffff;
+}
+
+.noah-badge.editors-choice {
+    background: #f68b1f;
+    color: #ffffff;
+}
+
+/* Price */
+.noah-product-price {
+    font-size: 28px;
+    font-weight: bold;
+    margin: 10px 0;
+}
+
+.s-light .noah-product-price {
+    color: #0073aa;
+}
+
+.s-dark .noah-product-price {
+    color: #0096dd;
+}
+
+/* Description */
+.noah-product-description {
+    line-height: 1.6;
+    margin: 10px 0;
+}
+
+.s-light .noah-product-description {
+    color: #555555;
+}
+
+.s-dark .noah-product-description {
+    color: #cccccc;
+}
+
+/* Pros and Cons */
+.noah-pros-cons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin: 15px 0;
+    padding: 15px;
+    border-radius: 4px;
+}
+
+.s-light .noah-pros-cons {
+    background: #f9f9f9;
+}
+
+.s-dark .noah-pros-cons {
+    background: #252525;
+}
+
+.noah-pros, .noah-cons {
+    padding: 0;
+}
+
+.noah-pros strong {
+    color: #46b450;
+    display: block;
+    margin-bottom: 8px;
+}
+
+.noah-cons strong {
+    color: #dc3232;
+    display: block;
+    margin-bottom: 8px;
+}
+
+.noah-pros ul, .noah-cons ul {
+    margin: 0;
+    padding-left: 20px;
+    list-style: none;
+}
+
+.noah-pros li:before {
+    content: "✓ ";
+    color: #46b450;
+    font-weight: bold;
+    margin-right: 5px;
+}
+
+.noah-cons li:before {
+    content: "✗ ";
+    color: #dc3232;
+    font-weight: bold;
+    margin-right: 5px;
+}
+
+/* Affiliate Button */
+.noah-affiliate-link {
+    display: inline-block;
+    padding: 12px 30px;
+    border-radius: 4px;
+    font-size: 16px;
+    font-weight: bold;
+    text-decoration: none;
+    text-align: center;
+    transition: all 0.3s ease;
+    border: none;
+    cursor: pointer;
+}
+
+.s-light .noah-affiliate-link {
+    background: #0073aa;
+    color: #ffffff;
+}
+
+.s-light .noah-affiliate-link:hover {
+    background: #005177;
+    color: #ffffff;
+}
+
+.s-dark .noah-affiliate-link {
+    background: #0096dd;
+    color: #ffffff;
+}
+
+.s-dark .noah-affiliate-link:hover {
+    background: #0073aa;
+    color: #ffffff;
+}
+
+/* Inline Layout */
+.noah-product-inline {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px;
+    border-radius: 4px;
+    margin: 20px 0;
+}
+
+.s-light .noah-product-inline {
+    background: #f9f9f9;
+    border: 1px solid #e0e0e0;
+}
+
+.s-dark .noah-product-inline {
+    background: #252525;
+    border: 1px solid #333333;
+}
+
+.noah-product-inline .noah-product-image {
+    width: 80px;
+    height: 80px;
+}
+
+.noah-product-inline .noah-product-title {
+    font-size: 18px;
+    margin: 0;
+}
+
+.noah-product-inline .noah-product-price {
+    font-size: 20px;
+    margin: 0;
+}
+
+/* Comparison Table */
+.noah-comparison-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 30px 0;
+    overflow-x: auto;
+    display: block;
+}
+
+.noah-comparison-table table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.noah-comparison-table th,
+.noah-comparison-table td {
+    padding: 15px;
+    text-align: left;
+    border: 1px solid;
+}
+
+.s-light .noah-comparison-table th,
+.s-light .noah-comparison-table td {
+    border-color: #e0e0e0;
+}
+
+.s-dark .noah-comparison-table th,
+.s-dark .noah-comparison-table td {
+    border-color: #333333;
+}
+
+.s-light .noah-comparison-table th {
+    background: #f9f9f9;
+    font-weight: bold;
+}
+
+.s-dark .noah-comparison-table th {
+    background: #252525;
+    font-weight: bold;
+}
+
+.noah-comparison-table img {
+    width: 100px;
+    height: 100px;
+    object-fit: cover;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .noah-product-header {
+        flex-direction: column;
+    }
+    
+    .noah-product-image {
+        width: 100%;
+        height: auto;
+        max-height: 300px;
+    }
+    
+    .noah-pros-cons {
+        grid-template-columns: 1fr;
+    }
+    
+    .noah-comparison-table {
+        font-size: 14px;
+    }
+    
+    .noah-comparison-table th,
+    .noah-comparison-table td {
+        padding: 10px;
+    }
+}
+
+/* Loading state */
+.noah-loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+/* Network badges */
+.noah-network-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    margin-left: 8px;
+}
+
+.s-light .noah-network-badge {
+    background: #e0e0e0;
+    color: #555555;
+}
+
+.s-dark .noah-network-badge {
+    background: #333333;
+    color: #cccccc;
+}
+
+/* Rating stars */
+.noah-rating {
+    color: #f4b400;
+    font-size: 16px;
+    margin: 8px 0;
+}
+
+.noah-rating-count {
+    font-size: 14px;
+    margin-left: 8px;
+}
+
+.s-light .noah-rating-count {
+    color: #666666;
+}
+
+.s-dark .noah-rating-count {
+    color: #999999;
+}

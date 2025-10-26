@@ -1,0 +1,39 @@
+/**
+ * Noah Affiliate Admin Styles
+ */
+
+.noah-affiliate-settings .nav-tab-wrapper {
+    margin-bottom: 20px;
+}
+
+.noah-networks-tabs .subsubsub {
+    margin: 20px 0;
+}
+
+.noah-test-result {
+    margin-left: 10px;
+    font-weight: bold;
+}
+
+.noah-date-filter {
+    background: white;
+    padding: 15px;
+    margin: 20px 0;
+    border: 1px solid #ccd0d4;
+}
+
+.noah-date-filter form {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.noah-analytics .noah-card {
+    text-align: center;
+}
+
+.noah-analytics .noah-card h3 {
+    margin: 0 0 10px 0;
+    font-size: 14px;
+    color: #666;
+}

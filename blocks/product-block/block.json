@@ -1,0 +1,40 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 2,
+  "name": "noah-affiliate/product",
+  "title": "Affiliate Product",
+  "category": "widgets",
+  "icon": "cart",
+  "description": "Add an affiliate product to your post",
+  "keywords": ["affiliate", "product", "link"],
+  "attributes": {
+    "productId": {
+      "type": "string",
+      "default": ""
+    },
+    "network": {
+      "type": "string",
+      "default": ""
+    },
+    "layout": {
+      "type": "string",
+      "default": "card"
+    },
+    "badge": {
+      "type": "string",
+      "default": ""
+    },
+    "customTitle": {
+      "type": "string",
+      "default": ""
+    }
+  },
+  "supports": {
+    "html": false,
+    "align": true
+  },
+  "textdomain": "noah-affiliate",
+  "editorScript": "file:./index.js",
+  "editorStyle": "file:./editor.css",
+  "style": "file:./style.css"
+}
