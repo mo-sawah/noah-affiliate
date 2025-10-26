@@ -34,12 +34,12 @@ class Noah_Affiliate_Firecrawl extends Noah_Affiliate_Network_Base {
             return $cached;
         }
         
-        // Get preset and build search URL
+        // Get preset
         $preset = $this->get_setting('preset', 'custom');
-        $search_url = '';
+        $search_query = $query;
         
+        // Add site filter for presets
         if ($preset === 'amazon') {
-            // For Amazon, if no country specified, get first available country
             $country = $args['country'];
             if (empty($country)) {
                 $amazon_countries = $this->get_setting('amazon_countries', array());
@@ -51,9 +51,25 @@ class Noah_Affiliate_Firecrawl extends Noah_Affiliate_Network_Base {
                     return array();
                 }
             }
-            $search_url = $this->get_amazon_search_url($query, $country);
+            
+            // Get domain for country
+            $domains = array(
+                'US' => 'amazon.com',
+                'UK' => 'amazon.co.uk',
+                'DE' => 'amazon.de',
+                'FR' => 'amazon.fr',
+                'IT' => 'amazon.it',
+                'ES' => 'amazon.es',
+                'CA' => 'amazon.ca',
+                'JP' => 'amazon.co.jp',
+                'AU' => 'amazon.com.au',
+                'IN' => 'amazon.in',
+            );
+            $domain = isset($domains[$country]) ? $domains[$country] : 'amazon.com';
+            $search_query = $query . ' site:' . $domain;
+            $args['country'] = $country;
+            
         } elseif ($preset === 'ebay') {
-            // For eBay, if no country specified, get first available country
             $country = $args['country'];
             if (empty($country)) {
                 $ebay_countries = $this->get_setting('ebay_countries', array());
@@ -65,65 +81,179 @@ class Noah_Affiliate_Firecrawl extends Noah_Affiliate_Network_Base {
                     return array();
                 }
             }
-            $search_url = $this->get_ebay_search_url($query, $country);
-        } else {
-            // Custom URL template
-            $search_url_template = $this->get_setting('search_url_template');
-            if (empty($search_url_template)) {
-                $this->log_error('No search URL template configured');
-                return array();
-            }
-            $search_url = str_replace('{query}', urlencode($query), $search_url_template);
+            
+            $domains = array(
+                'US' => 'ebay.com',
+                'UK' => 'ebay.co.uk',
+                'DE' => 'ebay.de',
+                'FR' => 'ebay.fr',
+                'IT' => 'ebay.it',
+                'ES' => 'ebay.es',
+                'CA' => 'ebay.ca',
+                'AU' => 'ebay.com.au',
+            );
+            $domain = isset($domains[$country]) ? $domains[$country] : 'ebay.com';
+            $search_query = $query . ' site:' . $domain;
+            $args['country'] = $country;
         }
         
-        if (empty($search_url)) {
-            return array();
-        }
+        error_log('[Firecrawl Debug] Using search API with query: ' . $search_query);
         
-        // Scrape the search results page
-        $response = $this->scrape_page($search_url, array(
-            'formats' => array('markdown', 'html'),
-            'onlyMainContent' => true
-        ));
+        // Use Firecrawl's search API
+        $response = $this->search_with_firecrawl($search_query, $args['limit']);
         
         if (!$response['success']) {
-            $this->log_error('Search scraping failed', array('query' => $query, 'error' => $response['message']));
+            $this->log_error('Firecrawl search failed', array('query' => $search_query, 'error' => $response['message']));
+            error_log('[Firecrawl Debug] SEARCH FAILED: ' . $response['message']);
             return array();
         }
         
-        // Log what we got from Firecrawl
-        error_log('[Firecrawl Debug] Response keys: ' . implode(', ', array_keys($response['data'])));
-        if (isset($response['data']['html'])) {
-            error_log('[Firecrawl Debug] HTML length: ' . strlen($response['data']['html']));
-        }
-        if (isset($response['data']['markdown'])) {
-            error_log('[Firecrawl Debug] Markdown length: ' . strlen($response['data']['markdown']));
-        }
+        error_log('[Firecrawl Debug] Search returned ' . count($response['results']) . ' results');
         
-        $products = $this->parse_search_results($response['data'], $args['limit'], $args);
+        // Parse results
+        $products = $this->parse_search_api_results($response['results'], $args['limit'], $args);
         
-        error_log('[Firecrawl Debug] Found ' . count($products) . ' products');
+        error_log('[Firecrawl Debug] Found ' . count($products) . ' products after parsing');
         if (!empty($products)) {
             error_log('[Firecrawl Debug] First product: ' . print_r($products[0], true));
         }
         
-        // Add country info to products for affiliate link generation
-        if (!empty($args['country'])) {
-            $country = $args['country'];
-        } elseif (isset($country)) {
-            // Use the auto-detected country from above
-            $args['country'] = $country;
+        // Cache results for 6 hours
+        set_transient($cache_key, $products, 6 * HOUR_IN_SECONDS);
+        
+        return $products;
+    }
+    
+    /**
+     * Search using Firecrawl's search API
+     */
+    private function search_with_firecrawl($query, $limit = 10) {
+        $api_key = $this->get_setting('api_key');
+        
+        if (empty($api_key)) {
+            return array(
+                'success' => false,
+                'message' => 'API key not configured'
+            );
         }
         
-        if (!empty($args['country'])) {
-            foreach ($products as &$product) {
+        $endpoint = $this->api_endpoint . '/search';
+        
+        $body = array(
+            'query' => $query,
+            'limit' => min($limit, 10), // Firecrawl search limit
+            'scrapeOptions' => array(
+                'formats' => array('markdown')
+            )
+        );
+        
+        $args = array(
+            'method' => 'POST',
+            'headers' => array(
+                'Authorization' => 'Bearer ' . $api_key,
+                'Content-Type' => 'application/json'
+            ),
+            'body' => json_encode($body),
+            'timeout' => 60
+        );
+        
+        $response = wp_remote_post($endpoint, $args);
+        
+        if (is_wp_error($response)) {
+            return array(
+                'success' => false,
+                'message' => $response->get_error_message()
+            );
+        }
+        
+        $code = wp_remote_retrieve_response_code($response);
+        $body = wp_remote_retrieve_body($response);
+        $data = json_decode($body, true);
+        
+        if ($code !== 200) {
+            return array(
+                'success' => false,
+                'message' => isset($data['error']) ? $data['error'] : 'HTTP ' . $code
+            );
+        }
+        
+        return array(
+            'success' => true,
+            'results' => isset($data['data']) ? $data['data'] : array()
+        );
+    }
+    
+    /**
+     * Parse Firecrawl search API results
+     */
+    private function parse_search_api_results($results, $limit, $args = array()) {
+        $products = array();
+        $preset = $this->get_setting('preset', 'custom');
+        
+        foreach ($results as $result) {
+            if (count($products) >= $limit) {
+                break;
+            }
+            
+            // Each result has: url, markdown, title
+            $url = isset($result['url']) ? $result['url'] : '';
+            $title = isset($result['title']) ? $result['title'] : '';
+            $markdown = isset($result['markdown']) ? $result['markdown'] : '';
+            
+            // Skip non-product URLs
+            if (empty($url) || (!strpos($url, '/dp/') && !strpos($url, '/gp/') && !strpos($url, '/itm/'))) {
+                continue;
+            }
+            
+            $product = array(
+                'id' => $url,
+                'title' => $title,
+                'url' => $url,
+                'network' => 'firecrawl',
+                'description' => '',
+                'price' => '',
+                'image' => '',
+                'merchant' => $preset === 'amazon' ? 'Amazon' : ($preset === 'ebay' ? 'eBay' : ''),
+                'rating' => 0,
+                'reviews' => 0
+            );
+            
+            // Extract from markdown if available
+            if (!empty($markdown)) {
+                // Extract price
+                if (preg_match('/[\$£€¥][\d,]+\.?\d*/', $markdown, $match)) {
+                    $product['price'] = $match[0];
+                }
+                
+                // Extract rating
+                if (preg_match('/([\d\.]+)\s*(?:out of|stars?)/i', $markdown, $match)) {
+                    $product['rating'] = floatval($match[1]);
+                }
+                
+                // Extract description (first few lines)
+                $lines = explode("\n", $markdown);
+                $desc_lines = array();
+                foreach ($lines as $line) {
+                    $line = trim($line);
+                    if (!empty($line) && !preg_match('/^[#\-\*\[]/', $line) && strlen($line) > 20) {
+                        $desc_lines[] = $line;
+                        if (count($desc_lines) >= 2) break;
+                    }
+                }
+                $product['description'] = implode(' ', $desc_lines);
+                if (strlen($product['description']) > 200) {
+                    $product['description'] = substr($product['description'], 0, 200) . '...';
+                }
+            }
+            
+            // Add country info for affiliate links
+            if (!empty($args['country'])) {
                 $product['country'] = $args['country'];
                 $product['preset'] = $preset;
             }
+            
+            $products[] = $this->normalize_product($product);
         }
-        
-        // Cache results for 6 hours
-        set_transient($cache_key, $products, 6 * HOUR_IN_SECONDS);
         
         return $products;
     }
@@ -475,14 +605,14 @@ class Noah_Affiliate_Firecrawl extends Noah_Affiliate_Network_Base {
             );
         }
         
-        // Parse HTML if available
-        if (isset($data['html'])) {
-            $products = $this->parse_html_products($data['html'], $selectors, $limit, $preset, $args);
+        // Parse markdown first for Firecrawl (HTML is too cleaned)
+        if (isset($data['markdown'])) {
+            $products = $this->parse_markdown_products($data['markdown'], $limit);
         }
         
-        // Fallback to markdown parsing if HTML parsing didn't yield results
-        if (empty($products) && isset($data['markdown'])) {
-            $products = $this->parse_markdown_products($data['markdown'], $limit);
+        // Fallback to HTML if markdown didn't work
+        if (empty($products) && isset($data['html'])) {
+            $products = $this->parse_html_products($data['html'], $selectors, $limit, $preset, $args);
         }
         
         return array_slice($products, 0, $limit);
@@ -700,33 +830,72 @@ class Noah_Affiliate_Firecrawl extends Noah_Affiliate_Network_Base {
     private function parse_markdown_products($markdown, $limit = 10) {
         $products = array();
         
-        // Extract links with titles from markdown
-        preg_match_all('/\[([^\]]+)\]\(([^)]+)\)/', $markdown, $matches, PREG_SET_ORDER);
+        error_log('[Firecrawl Debug] Parsing markdown, length: ' . strlen($markdown));
+        error_log('[Firecrawl Debug] Markdown sample: ' . substr($markdown, 0, 500));
         
-        foreach ($matches as $match) {
-            if (count($products) >= $limit) {
-                break;
+        // Split into lines
+        $lines = explode("\n", $markdown);
+        $current_product = null;
+        
+        foreach ($lines as $line) {
+            $line = trim($line);
+            
+            // Look for product links - Amazon URLs with /dp/ or /gp/
+            if (preg_match('/\[([^\]]+)\]\((https?:\/\/[^)]*(?:amazon|amzn)[^)]*(?:\/dp\/|\/gp\/)[^)]+)\)/', $line, $match)) {
+                // Save previous product if exists
+                if ($current_product && !empty($current_product['title'])) {
+                    $products[] = $this->normalize_product($current_product);
+                    if (count($products) >= $limit) {
+                        break;
+                    }
+                }
+                
+                // Start new product
+                $current_product = array(
+                    'id' => $match[2],
+                    'title' => $match[1],
+                    'url' => $match[2],
+                    'network' => 'firecrawl',
+                    'description' => '',
+                    'price' => '',
+                    'image' => '',
+                    'merchant' => 'Amazon',
+                    'rating' => 0,
+                    'reviews' => 0
+                );
             }
-            
-            $title = $match[1];
-            $url = $match[2];
-            
-            // Skip non-product links (like navigation)
-            if (stripos($url, 'product') === false && 
-                stripos($url, 'item') === false &&
-                stripos($url, '/p/') === false &&
-                stripos($url, '/dp/') === false) {
-                continue;
+            // Look for prices
+            elseif ($current_product && preg_match('/[\$£€¥][\d,]+\.?\d*/', $line, $match)) {
+                if (empty($current_product['price'])) {
+                    $current_product['price'] = $match[0];
+                }
             }
-            
-            $product = array(
-                'id' => $url,
-                'title' => $title,
-                'url' => $url,
-                'network' => 'firecrawl'
-            );
-            
-            $products[] = $this->normalize_product($product);
+            // Look for ratings
+            elseif ($current_product && preg_match('/([\d\.]+)\s*(?:out of|stars?)/i', $line, $match)) {
+                $current_product['rating'] = floatval($match[1]);
+            }
+            // Look for image links
+            elseif ($current_product && preg_match('/!\[([^\]]*)\]\(([^)]+)\)/', $line, $match)) {
+                if (empty($current_product['image'])) {
+                    $current_product['image'] = $match[2];
+                }
+            }
+            // Collect description text (non-link, non-empty lines)
+            elseif ($current_product && !empty($line) && !preg_match('/^[#\-\*\[]/', $line)) {
+                if (strlen($current_product['description']) < 150) {
+                    $current_product['description'] .= ' ' . $line;
+                }
+            }
+        }
+        
+        // Don't forget the last product
+        if ($current_product && !empty($current_product['title'])) {
+            $products[] = $this->normalize_product($current_product);
+        }
+        
+        error_log('[Firecrawl Debug] Markdown parsing found: ' . count($products) . ' products');
+        if (!empty($products)) {
+            error_log('[Firecrawl Debug] First product from markdown: ' . print_r($products[0], true));
         }
         
         return $products;
