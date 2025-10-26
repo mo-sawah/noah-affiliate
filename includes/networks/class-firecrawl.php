@@ -91,7 +91,7 @@ class Noah_Affiliate_Firecrawl extends Noah_Affiliate_Network_Base {
             return array();
         }
         
-        $products = $this->parse_search_results($response['data'], $args['limit']);
+        $products = $this->parse_search_results($response['data'], $args['limit'], $args);
         
         // Add country info to products for affiliate link generation
         if (!empty($args['country'])) {
@@ -422,7 +422,7 @@ class Noah_Affiliate_Firecrawl extends Noah_Affiliate_Network_Base {
     /**
      * Parse search results from scraped data
      */
-    private function parse_search_results($data, $limit = 10) {
+    private function parse_search_results($data, $limit = 10, $args = array()) {
         $products = array();
         
         // Get preset to use appropriate selectors
@@ -431,19 +431,20 @@ class Noah_Affiliate_Firecrawl extends Noah_Affiliate_Network_Base {
         // Get selectors based on preset or custom
         if ($preset === 'amazon') {
             $selectors = array(
-                'container' => '//*[contains(@data-component-type, "s-search-result")]',
-                'title' => './/h2//span',
-                'price' => './/*[contains(@class, "a-price")]//span[contains(@class, "a-offscreen")]',
-                'image' => './/img[@data-image-latency]',
-                'link' => './/h2//a',
+                'container' => '//div[@data-component-type="s-search-result"]',
+                'title' => './/h2//span[@class="a-size-medium"]',
+                'price' => './/span[@class="a-price"]//span[@class="a-offscreen"]',
+                'image' => './/img[@class="s-image"]',
+                'link' => './/h2//a[@class="a-link-normal"]',
+                'rating' => './/span[@class="a-icon-alt"]',
             );
         } elseif ($preset === 'ebay') {
             $selectors = array(
-                'container' => '//*[contains(@class, "s-item")]',
-                'title' => './/*[contains(@class, "s-item__title")]',
-                'price' => './/*[contains(@class, "s-item__price")]',
-                'image' => './/img[contains(@class, "s-item__image-img")]',
-                'link' => './/a[contains(@class, "s-item__link")]',
+                'container' => '//div[contains(@class, "s-item__wrapper")]',
+                'title' => './/div[@class="s-item__title"]',
+                'price' => './/span[@class="s-item__price"]',
+                'image' => './/img[@class="s-item__image-img"]',
+                'link' => './/a[@class="s-item__link"]',
             );
         } else {
             // Custom selectors
@@ -462,7 +463,7 @@ class Noah_Affiliate_Firecrawl extends Noah_Affiliate_Network_Base {
         
         // Parse HTML if available
         if (isset($data['html'])) {
-            $products = $this->parse_html_products($data['html'], $selectors, $limit, $preset);
+            $products = $this->parse_html_products($data['html'], $selectors, $limit, $preset, $args);
         }
         
         // Fallback to markdown parsing if HTML parsing didn't yield results
@@ -524,8 +525,10 @@ class Noah_Affiliate_Firecrawl extends Noah_Affiliate_Network_Base {
                 'price' => '',
                 'image' => '',
                 'url' => '',
-                'merchant' => '',
-                'network' => 'firecrawl'
+                'merchant' => $preset === 'amazon' ? 'Amazon' : ($preset === 'ebay' ? 'eBay' : ''),
+                'network' => 'firecrawl',
+                'rating' => 0,
+                'reviews' => 0
             );
             
             if ($preset === 'amazon' || $preset === 'ebay') {
@@ -553,8 +556,50 @@ class Noah_Affiliate_Firecrawl extends Noah_Affiliate_Network_Base {
                 if ($image_nodes->length > 0) {
                     $img = $image_nodes->item(0);
                     $product['image'] = $img->getAttribute('src');
-                    if (empty($product['image'])) {
+                    if (empty($product['image']) || strpos($product['image'], 'data:image') !== false) {
+                        // Try data-src or srcset for lazy loaded images
                         $product['image'] = $img->getAttribute('data-src');
+                        if (empty($product['image'])) {
+                            $srcset = $img->getAttribute('srcset');
+                            if (!empty($srcset)) {
+                                // Get first image from srcset
+                                $parts = explode(',', $srcset);
+                                if (!empty($parts[0])) {
+                                    $product['image'] = trim(explode(' ', $parts[0])[0]);
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // Rating (for Amazon)
+                if ($preset === 'amazon' && isset($selectors['rating'])) {
+                    $rating_nodes = $xpath->query($selectors['rating'], $container);
+                    if ($rating_nodes->length > 0) {
+                        $rating_text = $rating_nodes->item(0)->textContent;
+                        // Extract number from "4.5 out of 5 stars"
+                        if (preg_match('/[\d\.]+/', $rating_text, $matches)) {
+                            $product['rating'] = floatval($matches[0]);
+                        }
+                    }
+                }
+                
+                // Description - try to get from container
+                $desc_nodes = $xpath->query('.//*[contains(@class, "a-size-base")]', $container);
+                if ($desc_nodes->length > 0) {
+                    $desc_parts = array();
+                    foreach ($desc_nodes as $node) {
+                        $text = trim($node->textContent);
+                        if (!empty($text) && strlen($text) > 20 && $text !== $product['title']) {
+                            $desc_parts[] = $text;
+                            if (count($desc_parts) >= 2) break;
+                        }
+                    }
+                    if (!empty($desc_parts)) {
+                        $product['description'] = implode('. ', $desc_parts);
+                        if (strlen($product['description']) > 200) {
+                            $product['description'] = substr($product['description'], 0, 200) . '...';
+                        }
                     }
                 }
             } else {
@@ -581,16 +626,43 @@ class Noah_Affiliate_Firecrawl extends Noah_Affiliate_Network_Base {
             
             // Make URL absolute if it's relative
             if (!empty($product['url']) && !parse_url($product['url'], PHP_URL_SCHEME)) {
-                $base_url = $this->get_setting('base_url', '');
-                if (empty($base_url) && ($preset === 'amazon' || $preset === 'ebay')) {
-                    // Extract base from the image or current URL
-                    if (!empty($product['image'])) {
-                        $img_parts = parse_url($product['image']);
-                        $base_url = $img_parts['scheme'] . '://' . $img_parts['host'];
+                if ($preset === 'amazon') {
+                    // Amazon URLs start with /
+                    $country = isset($args['country']) ? $args['country'] : 'US';
+                    $domains = array(
+                        'US' => 'amazon.com',
+                        'UK' => 'amazon.co.uk',
+                        'DE' => 'amazon.de',
+                        'FR' => 'amazon.fr',
+                        'IT' => 'amazon.it',
+                        'ES' => 'amazon.es',
+                        'CA' => 'amazon.ca',
+                        'JP' => 'amazon.co.jp',
+                        'AU' => 'amazon.com.au',
+                        'IN' => 'amazon.in',
+                    );
+                    $domain = isset($domains[$country]) ? $domains[$country] : 'amazon.com';
+                    $product['url'] = 'https://www.' . $domain . $product['url'];
+                } elseif ($preset === 'ebay') {
+                    // eBay URLs might be relative
+                    $country = isset($args['country']) ? $args['country'] : 'US';
+                    $domains = array(
+                        'US' => 'ebay.com',
+                        'UK' => 'ebay.co.uk',
+                        'DE' => 'ebay.de',
+                        'FR' => 'ebay.fr',
+                        'IT' => 'ebay.it',
+                        'ES' => 'ebay.es',
+                        'CA' => 'ebay.ca',
+                        'AU' => 'ebay.com.au',
+                    );
+                    $domain = isset($domains[$country]) ? $domains[$country] : 'ebay.com';
+                    $product['url'] = 'https://www.' . $domain . $product['url'];
+                } else {
+                    $base_url = $this->get_setting('base_url', '');
+                    if (!empty($base_url)) {
+                        $product['url'] = rtrim($base_url, '/') . '/' . ltrim($product['url'], '/');
                     }
-                }
-                if (!empty($base_url)) {
-                    $product['url'] = rtrim($base_url, '/') . '/' . ltrim($product['url'], '/');
                 }
             }
             
@@ -605,6 +677,11 @@ class Noah_Affiliate_Firecrawl extends Noah_Affiliate_Network_Base {
         
         return $products;
     }
+    
+    /**
+     * Parse products from HTML
+     */
+    private function parse_html_products($html, $selectors, $limit = 10, $preset = 'custom', $args = array()) {
     
     /**
      * Parse products from markdown

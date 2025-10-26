@@ -114,8 +114,8 @@ class Noah_Affiliate_Metaboxes {
             .noah-country-select { flex: 1; }
             .noah-product-search-input { flex: 2; }
             .noah-search-results { margin-top: 15px; max-height: 300px; overflow-y: auto; }
-            .noah-search-result-item { padding: 10px; background: white; border: 1px solid #ddd; margin-bottom: 10px; display: flex; gap: 10px; }
-            .noah-result-image { width: 60px; height: 60px; object-fit: cover; }
+            .noah-search-result-item { padding: 10px; background: white; border: 1px solid #ddd; margin-bottom: 10px; display: flex; gap: 10px; align-items: flex-start; }
+            .noah-result-image { width: 80px; height: 80px; object-fit: contain; flex-shrink: 0; }
             .noah-result-content { flex: 1; }
             .noah-result-title { font-weight: bold; margin-bottom: 5px; }
             .noah-result-price { color: #0073aa; font-size: 14px; }
