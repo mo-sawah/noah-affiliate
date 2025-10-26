@@ -679,11 +679,6 @@ class Noah_Affiliate_Firecrawl extends Noah_Affiliate_Network_Base {
     }
     
     /**
-     * Parse products from HTML
-     */
-    private function parse_html_products($html, $selectors, $limit = 10, $preset = 'custom', $args = array()) {
-    
-    /**
      * Parse products from markdown
      */
     private function parse_markdown_products($markdown, $limit = 10) {
