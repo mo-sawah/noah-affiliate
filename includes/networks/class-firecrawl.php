@@ -21,7 +21,7 @@ class Noah_Affiliate_Firecrawl extends Noah_Affiliate_Network_Base {
     public function search_products($query, $args = array()) {
         $defaults = array(
             'limit' => 10,
-            'search_url' => '', // Base search URL template
+            'country' => '', // For Amazon/eBay presets
         );
         
         $args = wp_parse_args($args, $defaults);
@@ -34,16 +34,27 @@ class Noah_Affiliate_Firecrawl extends Noah_Affiliate_Network_Base {
             return $cached;
         }
         
-        // Get search URL template from settings
-        $search_url_template = $this->get_setting('search_url_template');
+        // Get preset and build search URL
+        $preset = $this->get_setting('preset', 'custom');
+        $search_url = '';
         
-        if (empty($search_url_template)) {
-            $this->log_error('No search URL template configured');
-            return array();
+        if ($preset === 'amazon' && !empty($args['country'])) {
+            $search_url = $this->get_amazon_search_url($query, $args['country']);
+        } elseif ($preset === 'ebay' && !empty($args['country'])) {
+            $search_url = $this->get_ebay_search_url($query, $args['country']);
+        } else {
+            // Custom URL template
+            $search_url_template = $this->get_setting('search_url_template');
+            if (empty($search_url_template)) {
+                $this->log_error('No search URL template configured');
+                return array();
+            }
+            $search_url = str_replace('{query}', urlencode($query), $search_url_template);
         }
         
-        // Replace {query} placeholder with actual search query
-        $search_url = str_replace('{query}', urlencode($query), $search_url_template);
+        if (empty($search_url)) {
+            return array();
+        }
         
         // Scrape the search results page
         $response = $this->scrape_page($search_url, array(
@@ -58,10 +69,104 @@ class Noah_Affiliate_Firecrawl extends Noah_Affiliate_Network_Base {
         
         $products = $this->parse_search_results($response['data'], $args['limit']);
         
+        // Add country info to products for affiliate link generation
+        if (!empty($args['country'])) {
+            foreach ($products as &$product) {
+                $product['country'] = $args['country'];
+                $product['preset'] = $preset;
+            }
+        }
+        
         // Cache results for 6 hours
         set_transient($cache_key, $products, 6 * HOUR_IN_SECONDS);
         
         return $products;
+    }
+    
+    /**
+     * Get Amazon search URL for country
+     */
+    private function get_amazon_search_url($query, $country) {
+        $domains = array(
+            'US' => 'amazon.com',
+            'UK' => 'amazon.co.uk',
+            'DE' => 'amazon.de',
+            'FR' => 'amazon.fr',
+            'IT' => 'amazon.it',
+            'ES' => 'amazon.es',
+            'CA' => 'amazon.ca',
+            'JP' => 'amazon.co.jp',
+            'AU' => 'amazon.com.au',
+            'IN' => 'amazon.in',
+        );
+        
+        $domain = isset($domains[$country]) ? $domains[$country] : 'amazon.com';
+        return 'https://www.' . $domain . '/s?k=' . urlencode($query);
+    }
+    
+    /**
+     * Get available countries based on preset
+     */
+    public function get_available_countries() {
+        $preset = $this->get_setting('preset', 'custom');
+        
+        if ($preset === 'amazon') {
+            $countries = $this->get_setting('amazon_countries', array());
+            $labels = array(
+                'US' => 'United States',
+                'UK' => 'United Kingdom',
+                'DE' => 'Germany',
+                'FR' => 'France',
+                'IT' => 'Italy',
+                'ES' => 'Spain',
+                'CA' => 'Canada',
+                'JP' => 'Japan',
+                'AU' => 'Australia',
+                'IN' => 'India',
+            );
+        } elseif ($preset === 'ebay') {
+            $countries = $this->get_setting('ebay_countries', array());
+            $labels = array(
+                'US' => 'United States',
+                'UK' => 'United Kingdom',
+                'DE' => 'Germany',
+                'FR' => 'France',
+                'IT' => 'Italy',
+                'ES' => 'Spain',
+                'CA' => 'Canada',
+                'AU' => 'Australia',
+            );
+        } else {
+            return array(); // No country selection for custom
+        }
+        
+        $available = array();
+        foreach ($countries as $code => $value) {
+            if (!empty($value)) {
+                $available[$code] = isset($labels[$code]) ? $labels[$code] : $code;
+            }
+        }
+        
+        return $available;
+    }
+    
+    /**
+     * Get eBay search URL for country
+     */
+    private function get_ebay_search_url($query, $country) {
+        $domains = array(
+            'US' => 'ebay.com',
+            'UK' => 'ebay.co.uk',
+            'DE' => 'ebay.de',
+            'FR' => 'ebay.fr',
+            'IT' => 'ebay.it',
+            'ES' => 'ebay.es',
+            'CA' => 'ebay.ca',
+            'AU' => 'ebay.com.au',
+        );
+        
+        $domain = isset($domains[$country]) ? $domains[$country] : 'ebay.com';
+        return 'https://www.' . $domain . '/sch/i.html?_nkw=' . urlencode($query);
     }
     
     /**
@@ -102,7 +207,64 @@ class Noah_Affiliate_Firecrawl extends Noah_Affiliate_Network_Base {
      * Generate affiliate link
      */
     public function generate_link($product_id, $product_data = array()) {
-        // Get affiliate parameters from settings
+        $preset = $this->get_setting('preset', 'custom');
+        $country = isset($product_data['country']) ? $product_data['country'] : '';
+        
+        // Handle Amazon preset
+        if ($preset === 'amazon' && !empty($country)) {
+            $amazon_countries = $this->get_setting('amazon_countries', array());
+            $tag = isset($amazon_countries[$country]) ? $amazon_countries[$country] : '';
+            
+            if (empty($tag)) {
+                return $product_id; // No tag for this country
+            }
+            
+            // Parse URL and add tag
+            $url_parts = parse_url($product_id);
+            $query_params = array();
+            
+            if (isset($url_parts['query'])) {
+                parse_str($url_parts['query'], $query_params);
+            }
+            
+            $query_params['tag'] = $tag;
+            
+            $new_query = http_build_query($query_params);
+            $scheme = isset($url_parts['scheme']) ? $url_parts['scheme'] : 'https';
+            $host = isset($url_parts['host']) ? $url_parts['host'] : '';
+            $path = isset($url_parts['path']) ? $url_parts['path'] : '';
+            
+            return $scheme . '://' . $host . $path . '?' . $new_query;
+        }
+        
+        // Handle eBay preset
+        if ($preset === 'ebay' && !empty($country)) {
+            $ebay_countries = $this->get_setting('ebay_countries', array());
+            $campaign_id = isset($ebay_countries[$country]) ? $ebay_countries[$country] : '';
+            
+            if (empty($campaign_id)) {
+                return $product_id; // No campaign ID for this country
+            }
+            
+            // Parse URL and add mkcid
+            $url_parts = parse_url($product_id);
+            $query_params = array();
+            
+            if (isset($url_parts['query'])) {
+                parse_str($url_parts['query'], $query_params);
+            }
+            
+            $query_params['mkcid'] = $campaign_id;
+            
+            $new_query = http_build_query($query_params);
+            $scheme = isset($url_parts['scheme']) ? $url_parts['scheme'] : 'https';
+            $host = isset($url_parts['host']) ? $url_parts['host'] : '';
+            $path = isset($url_parts['path']) ? $url_parts['path'] : '';
+            
+            return $scheme . '://' . $host . $path . '?' . $new_query;
+        }
+        
+        // Handle custom preset
         $param_name = $this->get_setting('affiliate_param_name', 'ref');
         $param_value = $this->get_setting('affiliate_param_value', '');
         
@@ -232,20 +394,44 @@ class Noah_Affiliate_Firecrawl extends Noah_Affiliate_Network_Base {
     private function parse_search_results($data, $limit = 10) {
         $products = array();
         
-        // Get custom selectors from settings
-        $title_selector = $this->get_setting('search_title_selector', 'h2 a, h3 a');
-        $price_selector = $this->get_setting('search_price_selector', '.price, [class*="price"]');
-        $image_selector = $this->get_setting('search_image_selector', 'img');
-        $link_selector = $this->get_setting('search_link_selector', 'a[href*="/product/"], a[href*="/item/"]');
+        // Get preset to use appropriate selectors
+        $preset = $this->get_setting('preset', 'custom');
         
-        // Parse HTML if available
-        if (isset($data['html'])) {
-            $products = $this->parse_html_products($data['html'], array(
+        // Get selectors based on preset or custom
+        if ($preset === 'amazon') {
+            $selectors = array(
+                'container' => '//*[contains(@data-component-type, "s-search-result")]',
+                'title' => './/h2//span',
+                'price' => './/*[contains(@class, "a-price")]//span[contains(@class, "a-offscreen")]',
+                'image' => './/img[@data-image-latency]',
+                'link' => './/h2//a',
+            );
+        } elseif ($preset === 'ebay') {
+            $selectors = array(
+                'container' => '//*[contains(@class, "s-item")]',
+                'title' => './/*[contains(@class, "s-item__title")]',
+                'price' => './/*[contains(@class, "s-item__price")]',
+                'image' => './/img[contains(@class, "s-item__image-img")]',
+                'link' => './/a[contains(@class, "s-item__link")]',
+            );
+        } else {
+            // Custom selectors
+            $title_selector = $this->get_setting('search_title_selector', 'h2 a, h3 a');
+            $price_selector = $this->get_setting('search_price_selector', '.price, [class*="price"]');
+            $image_selector = $this->get_setting('search_image_selector', 'img');
+            $link_selector = $this->get_setting('search_link_selector', 'a[href*="/product/"], a[href*="/item/"]');
+            
+            $selectors = array(
                 'title' => $title_selector,
                 'price' => $price_selector,
                 'image' => $image_selector,
                 'link' => $link_selector
-            ), $limit);
+            );
+        }
+        
+        // Parse HTML if available
+        if (isset($data['html'])) {
+            $products = $this->parse_html_products($data['html'], $selectors, $limit, $preset);
         }
         
         // Fallback to markdown parsing if HTML parsing didn't yield results
@@ -259,7 +445,7 @@ class Noah_Affiliate_Firecrawl extends Noah_Affiliate_Network_Base {
     /**
      * Parse products from HTML
      */
-    private function parse_html_products($html, $selectors, $limit = 10) {
+    private function parse_html_products($html, $selectors, $limit = 10, $preset = 'custom') {
         $products = array();
         
         // Use DOMDocument to parse HTML
@@ -267,19 +453,26 @@ class Noah_Affiliate_Firecrawl extends Noah_Affiliate_Network_Base {
         @$dom->loadHTML($html, LIBXML_NOERROR | LIBXML_NOWARNING);
         $xpath = new DOMXPath($dom);
         
-        // Find product containers (common class names)
-        $container_queries = array(
-            '//*[contains(@class, "product")]',
-            '//*[contains(@class, "item")]',
-            '//article',
-        );
-        
-        $containers = array();
-        foreach ($container_queries as $query) {
-            $nodes = $xpath->query($query);
-            if ($nodes->length > 0) {
-                $containers = $nodes;
-                break;
+        // Find product containers
+        if ($preset === 'amazon' || $preset === 'ebay') {
+            // Use container XPath for presets
+            $container_query = isset($selectors['container']) ? $selectors['container'] : '//*[contains(@class, "product")]';
+            $containers = $xpath->query($container_query);
+        } else {
+            // Find containers for custom (common class names)
+            $container_queries = array(
+                '//*[contains(@class, "product")]',
+                '//*[contains(@class, "item")]',
+                '//article',
+            );
+            
+            $containers = array();
+            foreach ($container_queries as $query) {
+                $nodes = $xpath->query($query);
+                if ($nodes->length > 0) {
+                    $containers = $nodes;
+                    break;
+                }
             }
         }
         
@@ -304,28 +497,67 @@ class Noah_Affiliate_Firecrawl extends Noah_Affiliate_Network_Base {
                 'network' => 'firecrawl'
             );
             
-            // Extract title
-            $title_nodes = $xpath->query('.//*[self::h2 or self::h3 or self::h4]/a', $container);
-            if ($title_nodes->length > 0) {
-                $product['title'] = trim($title_nodes->item(0)->textContent);
-                $product['url'] = $title_nodes->item(0)->getAttribute('href');
-            }
-            
-            // Extract price
-            $price_nodes = $xpath->query('.//*[contains(@class, "price") or contains(@class, "Price")]', $container);
-            if ($price_nodes->length > 0) {
-                $product['price'] = trim($price_nodes->item(0)->textContent);
-            }
-            
-            // Extract image
-            $image_nodes = $xpath->query('.//img', $container);
-            if ($image_nodes->length > 0) {
-                $product['image'] = $image_nodes->item(0)->getAttribute('src');
+            if ($preset === 'amazon' || $preset === 'ebay') {
+                // Extract using XPath for presets
+                // Title
+                $title_nodes = $xpath->query($selectors['title'], $container);
+                if ($title_nodes->length > 0) {
+                    $product['title'] = trim($title_nodes->item(0)->textContent);
+                }
+                
+                // Link
+                $link_nodes = $xpath->query($selectors['link'], $container);
+                if ($link_nodes->length > 0) {
+                    $product['url'] = $link_nodes->item(0)->getAttribute('href');
+                }
+                
+                // Price
+                $price_nodes = $xpath->query($selectors['price'], $container);
+                if ($price_nodes->length > 0) {
+                    $product['price'] = trim($price_nodes->item(0)->textContent);
+                }
+                
+                // Image
+                $image_nodes = $xpath->query($selectors['image'], $container);
+                if ($image_nodes->length > 0) {
+                    $img = $image_nodes->item(0);
+                    $product['image'] = $img->getAttribute('src');
+                    if (empty($product['image'])) {
+                        $product['image'] = $img->getAttribute('data-src');
+                    }
+                }
+            } else {
+                // Extract using CSS-style selectors for custom
+                // Title
+                $title_nodes = $xpath->query('.//*[self::h2 or self::h3 or self::h4]/a', $container);
+                if ($title_nodes->length > 0) {
+                    $product['title'] = trim($title_nodes->item(0)->textContent);
+                    $product['url'] = $title_nodes->item(0)->getAttribute('href');
+                }
+                
+                // Price
+                $price_nodes = $xpath->query('.//*[contains(@class, "price") or contains(@class, "Price")]', $container);
+                if ($price_nodes->length > 0) {
+                    $product['price'] = trim($price_nodes->item(0)->textContent);
+                }
+                
+                // Image
+                $image_nodes = $xpath->query('.//img', $container);
+                if ($image_nodes->length > 0) {
+                    $product['image'] = $image_nodes->item(0)->getAttribute('src');
+                }
             }
             
             // Make URL absolute if it's relative
             if (!empty($product['url']) && !parse_url($product['url'], PHP_URL_SCHEME)) {
                 $base_url = $this->get_setting('base_url', '');
+                if (empty($base_url) && ($preset === 'amazon' || $preset === 'ebay')) {
+                    // Extract base from the image or current URL
+                    if (!empty($product['image'])) {
+                        $img_parts = parse_url($product['image']);
+                        $base_url = $img_parts['scheme'] . '://' . $img_parts['host'];
+                    }
+                }
                 if (!empty($base_url)) {
                     $product['url'] = rtrim($base_url, '/') . '/' . ltrim($product['url'], '/');
                 }

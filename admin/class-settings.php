@@ -539,6 +539,15 @@ class Noah_Affiliate_Settings {
         $settings = get_option('noah_affiliate_firecrawl_settings', array());
         $enabled = isset($settings['enabled']) ? $settings['enabled'] : '0';
         $api_key = isset($settings['api_key']) ? $settings['api_key'] : '';
+        $preset = isset($settings['preset']) ? $settings['preset'] : 'custom';
+        
+        // Amazon settings by country
+        $amazon_countries = isset($settings['amazon_countries']) ? $settings['amazon_countries'] : array();
+        
+        // eBay settings by country  
+        $ebay_countries = isset($settings['ebay_countries']) ? $settings['ebay_countries'] : array();
+        
+        // Custom settings
         $base_url = isset($settings['base_url']) ? $settings['base_url'] : '';
         $search_url_template = isset($settings['search_url_template']) ? $settings['search_url_template'] : '';
         $test_url = isset($settings['test_url']) ? $settings['test_url'] : 'https://www.example.com';
@@ -585,10 +594,97 @@ class Noah_Affiliate_Settings {
             </tr>
             
             <tr>
+                <th scope="row"><?php _e('Website Preset', 'noah-affiliate'); ?></th>
+                <td>
+                    <select name="noah_affiliate_firecrawl_settings[preset]" id="firecrawl_preset">
+                        <option value="amazon" <?php selected($preset, 'amazon'); ?>>Amazon (Multi-Country)</option>
+                        <option value="ebay" <?php selected($preset, 'ebay'); ?>>eBay (Multi-Country)</option>
+                        <option value="custom" <?php selected($preset, 'custom'); ?>>Custom Website</option>
+                    </select>
+                    <p class="description"><?php _e('Choose a preset or configure custom website', 'noah-affiliate'); ?></p>
+                </td>
+            </tr>
+        </table>
+        
+        <!-- Amazon Preset -->
+        <div id="preset_amazon" style="display: <?php echo $preset === 'amazon' ? 'block' : 'none'; ?>;">
+            <h4><?php _e('Amazon Affiliate Settings', 'noah-affiliate'); ?></h4>
+            <table class="form-table">
+                <?php
+                $amazon_locales = array(
+                    'US' => array('name' => 'United States', 'domain' => 'amazon.com'),
+                    'UK' => array('name' => 'United Kingdom', 'domain' => 'amazon.co.uk'),
+                    'DE' => array('name' => 'Germany', 'domain' => 'amazon.de'),
+                    'FR' => array('name' => 'France', 'domain' => 'amazon.fr'),
+                    'IT' => array('name' => 'Italy', 'domain' => 'amazon.it'),
+                    'ES' => array('name' => 'Spain', 'domain' => 'amazon.es'),
+                    'CA' => array('name' => 'Canada', 'domain' => 'amazon.ca'),
+                    'JP' => array('name' => 'Japan', 'domain' => 'amazon.co.jp'),
+                    'AU' => array('name' => 'Australia', 'domain' => 'amazon.com.au'),
+                    'IN' => array('name' => 'India', 'domain' => 'amazon.in'),
+                );
+                
+                foreach ($amazon_locales as $code => $locale):
+                    $tag = isset($amazon_countries[$code]) ? $amazon_countries[$code] : '';
+                ?>
+                <tr>
+                    <th scope="row"><?php echo esc_html($locale['name']); ?> (<?php echo esc_html($code); ?>)</th>
+                    <td>
+                        <input type="text" 
+                               name="noah_affiliate_firecrawl_settings[amazon_countries][<?php echo esc_attr($code); ?>]" 
+                               value="<?php echo esc_attr($tag); ?>" 
+                               class="regular-text" 
+                               placeholder="your-<?php echo strtolower($code); ?>-tag">
+                        <p class="description"><?php echo sprintf(__('Your Amazon %s Associate Tag', 'noah-affiliate'), $locale['name']); ?> (<?php echo esc_html($locale['domain']); ?>)</p>
+                    </td>
+                </tr>
+                <?php endforeach; ?>
+            </table>
+        </div>
+        
+        <!-- eBay Preset -->
+        <div id="preset_ebay" style="display: <?php echo $preset === 'ebay' ? 'block' : 'none'; ?>;">
+            <h4><?php _e('eBay Affiliate Settings', 'noah-affiliate'); ?></h4>
+            <table class="form-table">
+                <?php
+                $ebay_locales = array(
+                    'US' => array('name' => 'United States', 'domain' => 'ebay.com'),
+                    'UK' => array('name' => 'United Kingdom', 'domain' => 'ebay.co.uk'),
+                    'DE' => array('name' => 'Germany', 'domain' => 'ebay.de'),
+                    'FR' => array('name' => 'France', 'ebay.fr'),
+                    'IT' => array('name' => 'Italy', 'domain' => 'ebay.it'),
+                    'ES' => array('name' => 'Spain', 'domain' => 'ebay.es'),
+                    'CA' => array('name' => 'Canada', 'domain' => 'ebay.ca'),
+                    'AU' => array('name' => 'Australia', 'domain' => 'ebay.com.au'),
+                );
+                
+                foreach ($ebay_locales as $code => $locale):
+                    $campaign_id = isset($ebay_countries[$code]) ? $ebay_countries[$code] : '';
+                ?>
+                <tr>
+                    <th scope="row"><?php echo esc_html($locale['name']); ?> (<?php echo esc_html($code); ?>)</th>
+                    <td>
+                        <input type="text" 
+                               name="noah_affiliate_firecrawl_settings[ebay_countries][<?php echo esc_attr($code); ?>]" 
+                               value="<?php echo esc_attr($campaign_id); ?>" 
+                               class="regular-text" 
+                               placeholder="5338xxxxxx">
+                        <p class="description"><?php echo sprintf(__('Your eBay Partner Network Campaign ID for %s', 'noah-affiliate'), $locale['name']); ?></p>
+                    </td>
+                </tr>
+                <?php endforeach; ?>
+            </table>
+        </div>
+        
+        <!-- Custom Preset -->
+        <div id="preset_custom" style="display: <?php echo $preset === 'custom' ? 'block' : 'none'; ?>;">
+            <h4><?php _e('Custom Website Settings', 'noah-affiliate'); ?></h4>
+            <table class="form-table">
+            <tr>
                 <th scope="row"><?php _e('Base URL', 'noah-affiliate'); ?></th>
                 <td>
                     <input type="url" name="noah_affiliate_firecrawl_settings[base_url]" value="<?php echo esc_attr($base_url); ?>" class="regular-text" placeholder="https://www.example.com">
-                    <p class="description"><?php _e('The base URL of the website you want to scrape (e.g., https://www.ebay.com)', 'noah-affiliate'); ?></p>
+                    <p class="description"><?php _e('The base URL of the website you want to scrape', 'noah-affiliate'); ?></p>
                 </td>
             </tr>
             
@@ -596,7 +692,7 @@ class Noah_Affiliate_Settings {
                 <th scope="row"><?php _e('Search URL Template', 'noah-affiliate'); ?></th>
                 <td>
                     <input type="text" name="noah_affiliate_firecrawl_settings[search_url_template]" value="<?php echo esc_attr($search_url_template); ?>" class="large-text" placeholder="https://www.example.com/search?q={query}">
-                    <p class="description"><?php _e('Search URL with {query} placeholder. Example: https://www.ebay.com/sch/i.html?_nkw={query}', 'noah-affiliate'); ?></p>
+                    <p class="description"><?php _e('Search URL with {query} placeholder', 'noah-affiliate'); ?></p>
                 </td>
             </tr>
             
@@ -604,33 +700,28 @@ class Noah_Affiliate_Settings {
                 <th scope="row"><?php _e('Test URL', 'noah-affiliate'); ?></th>
                 <td>
                     <input type="url" name="noah_affiliate_firecrawl_settings[test_url]" value="<?php echo esc_attr($test_url); ?>" class="regular-text">
-                    <p class="description"><?php _e('URL to test the connection (any page from the target website)', 'noah-affiliate'); ?></p>
+                    <p class="description"><?php _e('URL to test the connection', 'noah-affiliate'); ?></p>
                 </td>
             </tr>
-        </table>
-        
-        <h4><?php _e('Affiliate Link Settings', 'noah-affiliate'); ?></h4>
-        <table class="form-table">
+            
             <tr>
                 <th scope="row"><?php _e('Affiliate Parameter Name', 'noah-affiliate'); ?></th>
                 <td>
                     <input type="text" name="noah_affiliate_firecrawl_settings[affiliate_param_name]" value="<?php echo esc_attr($affiliate_param_name); ?>" class="regular-text" placeholder="ref">
-                    <p class="description"><?php _e('URL parameter name for your affiliate ID (e.g., "ref", "tag", "affiliate_id")', 'noah-affiliate'); ?></p>
+                    <p class="description"><?php _e('URL parameter name for your affiliate ID', 'noah-affiliate'); ?></p>
                 </td>
             </tr>
             
             <tr>
                 <th scope="row"><?php _e('Affiliate Parameter Value', 'noah-affiliate'); ?></th>
                 <td>
-                    <input type="text" name="noah_affiliate_firecrawl_settings[affiliate_param_value]" value="<?php echo esc_attr($affiliate_param_value); ?>" class="regular-text" placeholder="your-affiliate-id">
+                    <input type="text" name="noah_affiliate_firecrawl_settings[affiliate_param_value]" value="<?php echo esc_attr($affiliate_param_value); ?>" class="regular-text">
                     <p class="description"><?php _e('Your affiliate ID or tracking code', 'noah-affiliate'); ?></p>
                 </td>
             </tr>
         </table>
         
         <h4><?php _e('CSS Selectors (Advanced)', 'noah-affiliate'); ?></h4>
-        <p class="description"><?php _e('Customize these selectors to match the target website structure. Leave default if unsure.', 'noah-affiliate'); ?></p>
-        
         <table class="form-table">
             <tr>
                 <th colspan="2"><strong><?php _e('Search Results Page Selectors', 'noah-affiliate'); ?></strong></th>
@@ -703,6 +794,17 @@ class Noah_Affiliate_Settings {
                 </td>
             </tr>
         </table>
+        </div><!-- #preset_custom -->
+        
+        <script>
+        jQuery(document).ready(function($) {
+            $('#firecrawl_preset').on('change', function() {
+                var preset = $(this).val();
+                $('#preset_amazon, #preset_ebay, #preset_custom').hide();
+                $('#preset_' + preset).show();
+            });
+        });
+        </script>
         <?php
     }
     
@@ -820,7 +922,31 @@ class Noah_Affiliate_Settings {
         }
         
         if (isset($_POST['noah_affiliate_firecrawl_settings'])) {
-            update_option('noah_affiliate_firecrawl_settings', array_map('sanitize_text_field', $_POST['noah_affiliate_firecrawl_settings']));
+            $firecrawl = $_POST['noah_affiliate_firecrawl_settings'];
+            
+            // Sanitize amazon_countries array
+            if (isset($firecrawl['amazon_countries']) && is_array($firecrawl['amazon_countries'])) {
+                $firecrawl['amazon_countries'] = array_map('sanitize_text_field', $firecrawl['amazon_countries']);
+            }
+            
+            // Sanitize ebay_countries array
+            if (isset($firecrawl['ebay_countries']) && is_array($firecrawl['ebay_countries'])) {
+                $firecrawl['ebay_countries'] = array_map('sanitize_text_field', $firecrawl['ebay_countries']);
+            }
+            
+            // Sanitize other fields
+            $firecrawl_sanitized = array();
+            foreach ($firecrawl as $key => $value) {
+                if ($key === 'amazon_countries' || $key === 'ebay_countries') {
+                    $firecrawl_sanitized[$key] = $value; // Already sanitized above
+                } elseif (is_array($value)) {
+                    $firecrawl_sanitized[$key] = array_map('sanitize_text_field', $value);
+                } else {
+                    $firecrawl_sanitized[$key] = sanitize_text_field($value);
+                }
+            }
+            
+            update_option('noah_affiliate_firecrawl_settings', $firecrawl_sanitized);
         }
         
         // Save auto-linking settings
