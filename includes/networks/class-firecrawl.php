@@ -91,7 +91,21 @@ class Noah_Affiliate_Firecrawl extends Noah_Affiliate_Network_Base {
             return array();
         }
         
+        // Log what we got from Firecrawl
+        error_log('[Firecrawl Debug] Response keys: ' . implode(', ', array_keys($response['data'])));
+        if (isset($response['data']['html'])) {
+            error_log('[Firecrawl Debug] HTML length: ' . strlen($response['data']['html']));
+        }
+        if (isset($response['data']['markdown'])) {
+            error_log('[Firecrawl Debug] Markdown length: ' . strlen($response['data']['markdown']));
+        }
+        
         $products = $this->parse_search_results($response['data'], $args['limit'], $args);
+        
+        error_log('[Firecrawl Debug] Found ' . count($products) . ' products');
+        if (!empty($products)) {
+            error_log('[Firecrawl Debug] First product: ' . print_r($products[0], true));
+        }
         
         // Add country info to products for affiliate link generation
         if (!empty($args['country'])) {
@@ -490,6 +504,8 @@ class Noah_Affiliate_Firecrawl extends Noah_Affiliate_Network_Base {
             // Use container XPath for presets
             $container_query = isset($selectors['container']) ? $selectors['container'] : '//*[contains(@class, "product")]';
             $containers = $xpath->query($container_query);
+            error_log('[Firecrawl Debug] XPath query: ' . $container_query);
+            error_log('[Firecrawl Debug] Found containers: ' . $containers->length);
         } else {
             // Find containers for custom (common class names)
             $container_queries = array(

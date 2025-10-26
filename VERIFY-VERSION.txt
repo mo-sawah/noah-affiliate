@@ -1,0 +1,25 @@
+VERIFICATION FILE
+=================
+This file confirms you have the correct version with Firecrawl support.
+
+Version: 1.0.1
+Date: October 26, 2025
+Time: 19:10 UTC
+
+Features included:
+✓ Firecrawl Network Support
+✓ Amazon Preset with Multi-Country
+✓ eBay Preset with Multi-Country  
+✓ Custom Website Support
+✓ Country Selector in Post Editor
+✓ Improved Product Parsing
+✓ Add Button Functionality
+
+If you see this file, you have the CORRECT version!
+
+To verify Firecrawl is working:
+1. Check WordPress Plugins page - should show version 1.0.1
+2. Go to Noah Affiliate > Settings > Networks
+3. You MUST see: Amazon | Awin | CJ | Rakuten | Skimlinks | Firecrawl
+
+If you don't see Firecrawl link, you have the WRONG FILES!
