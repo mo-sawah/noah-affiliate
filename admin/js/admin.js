@@ -14,6 +14,38 @@
         
         initProductSearch: function() {
             var self = this;
+            
+            // Handle network change to show/hide country selector
+            $('#noah-network-select').on('change', function() {
+                var network = $(this).val();
+                var $countrySelect = $('#noah-country-select');
+                
+                if (network === 'firecrawl') {
+                    // Load available countries for Firecrawl
+                    $.ajax({
+                        url: noahAffiliateAdmin.ajaxUrl,
+                        type: 'POST',
+                        data: {
+                            action: 'noah_get_firecrawl_countries',
+                            nonce: noahAffiliateAdmin.nonce
+                        },
+                        success: function(response) {
+                            if (response.success && response.data.countries) {
+                                var options = '<option value="">Select Country</option>';
+                                $.each(response.data.countries, function(code, name) {
+                                    options += '<option value="' + code + '">' + name + '</option>';
+                                });
+                                $countrySelect.html(options).show();
+                            } else {
+                                $countrySelect.hide();
+                            }
+                        }
+                    });
+                } else {
+                    $countrySelect.hide();
+                }
+            });
+            
             $('.noah-search-button').on('click', function(e) {
                 e.preventDefault();
                 self.searchProducts();
@@ -22,11 +54,18 @@
         
         searchProducts: function() {
             var network = $('#noah-network-select').val();
+            var country = $('#noah-country-select').val();
             var query = $('#noah-product-search').val();
             var $results = $('.noah-search-results');
             
             if (!network || !query) {
                 alert('Please select a network and enter search query');
+                return;
+            }
+            
+            // Check if Firecrawl and country is required
+            if (network === 'firecrawl' && $('#noah-country-select').is(':visible') && !country) {
+                alert('Please select a country');
                 return;
             }
             
@@ -39,7 +78,8 @@
                     action: 'noah_search_products',
                     nonce: noahAffiliateAdmin.nonce,
                     network: network,
-                    query: query
+                    query: query,
+                    country: country
                 },
                 success: function(response) {
                     if (response.success && response.data.products) {
@@ -55,7 +95,12 @@
                             html += '</div>';
                         });
                         $results.html(html);
+                    } else {
+                        $results.html('<p>No products found.</p>');
                     }
+                },
+                error: function() {
+                    $results.html('<p>Error searching products. Please try again.</p>');
                 }
             });
         },

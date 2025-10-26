@@ -77,6 +77,10 @@ class Noah_Affiliate_Metaboxes {
                         <?php endforeach; ?>
                     </select>
                     
+                    <select id="noah-country-select" class="noah-country-select" style="display: none;">
+                        <option value=""><?php _e('Select Country', 'noah-affiliate'); ?></option>
+                    </select>
+                    
                     <input type="text" id="noah-product-search" class="noah-product-search-input" placeholder="<?php _e('Search for products...', 'noah-affiliate'); ?>">
                     <button type="button" class="button noah-search-button"><?php _e('Search', 'noah-affiliate'); ?></button>
                 </div>
@@ -106,7 +110,9 @@ class Noah_Affiliate_Metaboxes {
         <style>
             .noah-product-search { margin-bottom: 20px; padding: 15px; background: #f9f9f9; border: 1px solid #ddd; }
             .noah-search-form { display: flex; gap: 10px; margin-top: 10px; }
-            .noah-network-select, .noah-product-search-input { flex: 1; }
+            .noah-network-select { flex: 1; }
+            .noah-country-select { flex: 1; }
+            .noah-product-search-input { flex: 2; }
             .noah-search-results { margin-top: 15px; max-height: 300px; overflow-y: auto; }
             .noah-search-result-item { padding: 10px; background: white; border: 1px solid #ddd; margin-bottom: 10px; display: flex; gap: 10px; }
             .noah-result-image { width: 60px; height: 60px; object-fit: cover; }

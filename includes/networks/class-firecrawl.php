@@ -38,10 +38,34 @@ class Noah_Affiliate_Firecrawl extends Noah_Affiliate_Network_Base {
         $preset = $this->get_setting('preset', 'custom');
         $search_url = '';
         
-        if ($preset === 'amazon' && !empty($args['country'])) {
-            $search_url = $this->get_amazon_search_url($query, $args['country']);
-        } elseif ($preset === 'ebay' && !empty($args['country'])) {
-            $search_url = $this->get_ebay_search_url($query, $args['country']);
+        if ($preset === 'amazon') {
+            // For Amazon, if no country specified, get first available country
+            $country = $args['country'];
+            if (empty($country)) {
+                $amazon_countries = $this->get_setting('amazon_countries', array());
+                $available_countries = array_filter($amazon_countries);
+                if (!empty($available_countries)) {
+                    $country = key($available_countries);
+                } else {
+                    $this->log_error('No Amazon countries configured');
+                    return array();
+                }
+            }
+            $search_url = $this->get_amazon_search_url($query, $country);
+        } elseif ($preset === 'ebay') {
+            // For eBay, if no country specified, get first available country
+            $country = $args['country'];
+            if (empty($country)) {
+                $ebay_countries = $this->get_setting('ebay_countries', array());
+                $available_countries = array_filter($ebay_countries);
+                if (!empty($available_countries)) {
+                    $country = key($available_countries);
+                } else {
+                    $this->log_error('No eBay countries configured');
+                    return array();
+                }
+            }
+            $search_url = $this->get_ebay_search_url($query, $country);
         } else {
             // Custom URL template
             $search_url_template = $this->get_setting('search_url_template');
@@ -70,6 +94,13 @@ class Noah_Affiliate_Firecrawl extends Noah_Affiliate_Network_Base {
         $products = $this->parse_search_results($response['data'], $args['limit']);
         
         // Add country info to products for affiliate link generation
+        if (!empty($args['country'])) {
+            $country = $args['country'];
+        } elseif (isset($country)) {
+            // Use the auto-detected country from above
+            $args['country'] = $country;
+        }
+        
         if (!empty($args['country'])) {
             foreach ($products as &$product) {
                 $product['country'] = $args['country'];
