@@ -58,6 +58,9 @@ class Noah_Affiliate_Settings {
         
         // Network settings - Skimlinks
         register_setting('noah_affiliate_skimlinks', 'noah_affiliate_skimlinks_settings');
+        
+        // Network settings - Firecrawl
+        register_setting('noah_affiliate_firecrawl', 'noah_affiliate_firecrawl_settings');
     }
     
     /**
@@ -227,7 +230,8 @@ class Noah_Affiliate_Settings {
                 <li><a href="?page=noah-affiliate&tab=networks&network=awin" class="<?php echo $active_network == 'awin' ? 'current' : ''; ?>">Awin</a> | </li>
                 <li><a href="?page=noah-affiliate&tab=networks&network=cj" class="<?php echo $active_network == 'cj' ? 'current' : ''; ?>">CJ</a> | </li>
                 <li><a href="?page=noah-affiliate&tab=networks&network=rakuten" class="<?php echo $active_network == 'rakuten' ? 'current' : ''; ?>">Rakuten</a> | </li>
-                <li><a href="?page=noah-affiliate&tab=networks&network=skimlinks" class="<?php echo $active_network == 'skimlinks' ? 'current' : ''; ?>">Skimlinks</a></li>
+                <li><a href="?page=noah-affiliate&tab=networks&network=skimlinks" class="<?php echo $active_network == 'skimlinks' ? 'current' : ''; ?>">Skimlinks</a> | </li>
+                <li><a href="?page=noah-affiliate&tab=networks&network=firecrawl" class="<?php echo $active_network == 'firecrawl' ? 'current' : ''; ?>">Firecrawl</a></li>
             </ul>
             
             <div class="clear"></div>
@@ -245,6 +249,9 @@ class Noah_Affiliate_Settings {
                     break;
                 case 'skimlinks':
                     $this->render_skimlinks_settings();
+                    break;
+                case 'firecrawl':
+                    $this->render_firecrawl_settings();
                     break;
                 default:
                     $this->render_amazon_settings();
@@ -526,6 +533,180 @@ class Noah_Affiliate_Settings {
     }
     
     /**
+     * Render Firecrawl settings
+     */
+    private function render_firecrawl_settings() {
+        $settings = get_option('noah_affiliate_firecrawl_settings', array());
+        $enabled = isset($settings['enabled']) ? $settings['enabled'] : '0';
+        $api_key = isset($settings['api_key']) ? $settings['api_key'] : '';
+        $base_url = isset($settings['base_url']) ? $settings['base_url'] : '';
+        $search_url_template = isset($settings['search_url_template']) ? $settings['search_url_template'] : '';
+        $test_url = isset($settings['test_url']) ? $settings['test_url'] : 'https://www.example.com';
+        
+        // Affiliate link parameters
+        $affiliate_param_name = isset($settings['affiliate_param_name']) ? $settings['affiliate_param_name'] : 'ref';
+        $affiliate_param_value = isset($settings['affiliate_param_value']) ? $settings['affiliate_param_value'] : '';
+        
+        // CSS Selectors
+        $search_title_selector = isset($settings['search_title_selector']) ? $settings['search_title_selector'] : 'h2 a, h3 a';
+        $search_price_selector = isset($settings['search_price_selector']) ? $settings['search_price_selector'] : '.price, [class*="price"]';
+        $search_image_selector = isset($settings['search_image_selector']) ? $settings['search_image_selector'] : 'img';
+        $search_link_selector = isset($settings['search_link_selector']) ? $settings['search_link_selector'] : 'a[href*="/product/"]';
+        
+        $product_title_selector = isset($settings['product_title_selector']) ? $settings['product_title_selector'] : 'h1';
+        $product_price_selector = isset($settings['product_price_selector']) ? $settings['product_price_selector'] : '.price';
+        $product_description_selector = isset($settings['product_description_selector']) ? $settings['product_description_selector'] : '.description';
+        $product_image_selector = isset($settings['product_image_selector']) ? $settings['product_image_selector'] : '.product-image img';
+        
+        ?>
+        <h3><?php _e('Firecrawl Web Scraping', 'noah-affiliate'); ?></h3>
+        <p class="description"><?php _e('Use Firecrawl API to scrape product information from any website. Perfect for when you don\'t have API access.', 'noah-affiliate'); ?></p>
+        
+        <table class="form-table">
+            <tr>
+                <th scope="row"><?php _e('Enable Firecrawl', 'noah-affiliate'); ?></th>
+                <td>
+                    <label>
+                        <input type="checkbox" name="noah_affiliate_firecrawl_settings[enabled]" value="1" <?php checked($enabled, '1'); ?>>
+                        <?php _e('Enable Firecrawl integration', 'noah-affiliate'); ?>
+                    </label>
+                </td>
+            </tr>
+            
+            <tr>
+                <th scope="row"><?php _e('API Key', 'noah-affiliate'); ?></th>
+                <td>
+                    <input type="text" name="noah_affiliate_firecrawl_settings[api_key]" value="<?php echo esc_attr($api_key); ?>" class="regular-text" placeholder="fc-xxxxxxxxxxxxx">
+                    <p class="description">
+                        <?php _e('Your Firecrawl API key. Get one at', 'noah-affiliate'); ?> 
+                        <a href="https://firecrawl.dev" target="_blank">firecrawl.dev</a>
+                    </p>
+                </td>
+            </tr>
+            
+            <tr>
+                <th scope="row"><?php _e('Base URL', 'noah-affiliate'); ?></th>
+                <td>
+                    <input type="url" name="noah_affiliate_firecrawl_settings[base_url]" value="<?php echo esc_attr($base_url); ?>" class="regular-text" placeholder="https://www.example.com">
+                    <p class="description"><?php _e('The base URL of the website you want to scrape (e.g., https://www.ebay.com)', 'noah-affiliate'); ?></p>
+                </td>
+            </tr>
+            
+            <tr>
+                <th scope="row"><?php _e('Search URL Template', 'noah-affiliate'); ?></th>
+                <td>
+                    <input type="text" name="noah_affiliate_firecrawl_settings[search_url_template]" value="<?php echo esc_attr($search_url_template); ?>" class="large-text" placeholder="https://www.example.com/search?q={query}">
+                    <p class="description"><?php _e('Search URL with {query} placeholder. Example: https://www.ebay.com/sch/i.html?_nkw={query}', 'noah-affiliate'); ?></p>
+                </td>
+            </tr>
+            
+            <tr>
+                <th scope="row"><?php _e('Test URL', 'noah-affiliate'); ?></th>
+                <td>
+                    <input type="url" name="noah_affiliate_firecrawl_settings[test_url]" value="<?php echo esc_attr($test_url); ?>" class="regular-text">
+                    <p class="description"><?php _e('URL to test the connection (any page from the target website)', 'noah-affiliate'); ?></p>
+                </td>
+            </tr>
+        </table>
+        
+        <h4><?php _e('Affiliate Link Settings', 'noah-affiliate'); ?></h4>
+        <table class="form-table">
+            <tr>
+                <th scope="row"><?php _e('Affiliate Parameter Name', 'noah-affiliate'); ?></th>
+                <td>
+                    <input type="text" name="noah_affiliate_firecrawl_settings[affiliate_param_name]" value="<?php echo esc_attr($affiliate_param_name); ?>" class="regular-text" placeholder="ref">
+                    <p class="description"><?php _e('URL parameter name for your affiliate ID (e.g., "ref", "tag", "affiliate_id")', 'noah-affiliate'); ?></p>
+                </td>
+            </tr>
+            
+            <tr>
+                <th scope="row"><?php _e('Affiliate Parameter Value', 'noah-affiliate'); ?></th>
+                <td>
+                    <input type="text" name="noah_affiliate_firecrawl_settings[affiliate_param_value]" value="<?php echo esc_attr($affiliate_param_value); ?>" class="regular-text" placeholder="your-affiliate-id">
+                    <p class="description"><?php _e('Your affiliate ID or tracking code', 'noah-affiliate'); ?></p>
+                </td>
+            </tr>
+        </table>
+        
+        <h4><?php _e('CSS Selectors (Advanced)', 'noah-affiliate'); ?></h4>
+        <p class="description"><?php _e('Customize these selectors to match the target website structure. Leave default if unsure.', 'noah-affiliate'); ?></p>
+        
+        <table class="form-table">
+            <tr>
+                <th colspan="2"><strong><?php _e('Search Results Page Selectors', 'noah-affiliate'); ?></strong></th>
+            </tr>
+            <tr>
+                <th scope="row"><?php _e('Title Selector', 'noah-affiliate'); ?></th>
+                <td>
+                    <input type="text" name="noah_affiliate_firecrawl_settings[search_title_selector]" value="<?php echo esc_attr($search_title_selector); ?>" class="large-text">
+                    <p class="description"><?php _e('CSS selector for product titles in search results', 'noah-affiliate'); ?></p>
+                </td>
+            </tr>
+            
+            <tr>
+                <th scope="row"><?php _e('Price Selector', 'noah-affiliate'); ?></th>
+                <td>
+                    <input type="text" name="noah_affiliate_firecrawl_settings[search_price_selector]" value="<?php echo esc_attr($search_price_selector); ?>" class="large-text">
+                    <p class="description"><?php _e('CSS selector for product prices in search results', 'noah-affiliate'); ?></p>
+                </td>
+            </tr>
+            
+            <tr>
+                <th scope="row"><?php _e('Image Selector', 'noah-affiliate'); ?></th>
+                <td>
+                    <input type="text" name="noah_affiliate_firecrawl_settings[search_image_selector]" value="<?php echo esc_attr($search_image_selector); ?>" class="large-text">
+                    <p class="description"><?php _e('CSS selector for product images in search results', 'noah-affiliate'); ?></p>
+                </td>
+            </tr>
+            
+            <tr>
+                <th scope="row"><?php _e('Link Selector', 'noah-affiliate'); ?></th>
+                <td>
+                    <input type="text" name="noah_affiliate_firecrawl_settings[search_link_selector]" value="<?php echo esc_attr($search_link_selector); ?>" class="large-text">
+                    <p class="description"><?php _e('CSS selector for product links in search results', 'noah-affiliate'); ?></p>
+                </td>
+            </tr>
+            
+            <tr>
+                <th colspan="2"><strong><?php _e('Product Page Selectors', 'noah-affiliate'); ?></strong></th>
+            </tr>
+            
+            <tr>
+                <th scope="row"><?php _e('Title Selector', 'noah-affiliate'); ?></th>
+                <td>
+                    <input type="text" name="noah_affiliate_firecrawl_settings[product_title_selector]" value="<?php echo esc_attr($product_title_selector); ?>" class="large-text">
+                    <p class="description"><?php _e('CSS selector for product title on product page', 'noah-affiliate'); ?></p>
+                </td>
+            </tr>
+            
+            <tr>
+                <th scope="row"><?php _e('Price Selector', 'noah-affiliate'); ?></th>
+                <td>
+                    <input type="text" name="noah_affiliate_firecrawl_settings[product_price_selector]" value="<?php echo esc_attr($product_price_selector); ?>" class="large-text">
+                    <p class="description"><?php _e('CSS selector for product price on product page', 'noah-affiliate'); ?></p>
+                </td>
+            </tr>
+            
+            <tr>
+                <th scope="row"><?php _e('Description Selector', 'noah-affiliate'); ?></th>
+                <td>
+                    <input type="text" name="noah_affiliate_firecrawl_settings[product_description_selector]" value="<?php echo esc_attr($product_description_selector); ?>" class="large-text">
+                    <p class="description"><?php _e('CSS selector for product description', 'noah-affiliate'); ?></p>
+                </td>
+            </tr>
+            
+            <tr>
+                <th scope="row"><?php _e('Image Selector', 'noah-affiliate'); ?></th>
+                <td>
+                    <input type="text" name="noah_affiliate_firecrawl_settings[product_image_selector]" value="<?php echo esc_attr($product_image_selector); ?>" class="large-text">
+                    <p class="description"><?php _e('CSS selector for product main image', 'noah-affiliate'); ?></p>
+                </td>
+            </tr>
+        </table>
+        <?php
+    }
+    
+    /**
      * Render Auto-Linking tab
      */
     private function render_auto_linking_tab() {
@@ -636,6 +817,10 @@ class Noah_Affiliate_Settings {
                 $skimlinks['excluded_post_types'] = array_map('sanitize_text_field', $skimlinks['excluded_post_types']);
             }
             update_option('noah_affiliate_skimlinks_settings', $skimlinks);
+        }
+        
+        if (isset($_POST['noah_affiliate_firecrawl_settings'])) {
+            update_option('noah_affiliate_firecrawl_settings', array_map('sanitize_text_field', $_POST['noah_affiliate_firecrawl_settings']));
         }
         
         // Save auto-linking settings
