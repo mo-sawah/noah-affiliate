@@ -55,7 +55,7 @@ class Noah_Affiliate_Rakuten extends Noah_Affiliate_Network_Base {
         }
         
         if (!empty($args['category'])) {
-            $params['cat'] => $args['category'];
+            $params['cat'] = $args['category'];
         }
         
         if (!empty($args['min_price'])) {
