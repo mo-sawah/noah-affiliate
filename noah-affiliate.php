@@ -3,7 +3,7 @@
  * Plugin Name: Noah Affiliate
  * Plugin URI: https://sawahsolutions.com
  * Description: Smart affiliate management for product reviews with auto-linking and manual product insertion
- * Version: 1.0.0
+ * Version: 1.0.1
  * Author: Mohamed Sawah
  * Author URI: https://sawahsolutions.com
  * License: GPL v2 or later
@@ -17,10 +17,30 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('NOAH_AFFILIATE_VERSION', '1.0.0');
+define('NOAH_AFFILIATE_VERSION', '1.0.1');
 define('NOAH_AFFILIATE_PATH', plugin_dir_path(__FILE__));
 define('NOAH_AFFILIATE_URL', plugin_dir_url(__FILE__));
 define('NOAH_AFFILIATE_BASENAME', plugin_basename(__FILE__));
+
+/**
+ * Plugin activation hook - must be called before class initialization
+ */
+function noah_affiliate_activate() {
+    require_once NOAH_AFFILIATE_PATH . 'includes/class-database.php';
+    Noah_Affiliate_Database::create_tables();
+    flush_rewrite_rules();
+}
+
+/**
+ * Plugin deactivation hook
+ */
+function noah_affiliate_deactivate() {
+    flush_rewrite_rules();
+}
+
+// Register activation/deactivation hooks
+register_activation_hook(__FILE__, 'noah_affiliate_activate');
+register_deactivation_hook(__FILE__, 'noah_affiliate_deactivate');
 
 /**
  * Main Noah Affiliate Class
@@ -86,28 +106,10 @@ class Noah_Affiliate {
      * Initialize hooks
      */
     private function init_hooks() {
-        register_activation_hook(__FILE__, array($this, 'activate'));
-        register_deactivation_hook(__FILE__, array($this, 'deactivate'));
-        
         add_action('plugins_loaded', array($this, 'init'));
         add_action('init', array($this, 'register_blocks'));
         add_action('init', array($this, 'register_post_types'));
         add_action('init', array($this, 'setup_rewrite_rules'));
-    }
-    
-    /**
-     * Plugin activation
-     */
-    public function activate() {
-        Noah_Affiliate_Database::create_tables();
-        flush_rewrite_rules();
-    }
-    
-    /**
-     * Plugin deactivation
-     */
-    public function deactivate() {
-        flush_rewrite_rules();
     }
     
     /**
