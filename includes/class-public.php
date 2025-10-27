@@ -31,7 +31,9 @@ class Noah_Affiliate_Public {
         
         // Shortcodes
         add_shortcode('noah_product', array($this, 'product_shortcode'));
+        add_shortcode('noah_products', array($this, 'products_shortcode'));
         add_shortcode('noah_comparison', array($this, 'comparison_shortcode'));
+        add_shortcode('noah_grid', array($this, 'grid_shortcode'));
     }
     
     /**
@@ -48,6 +50,13 @@ class Noah_Affiliate_Public {
             'noah-affiliate',
             NOAH_AFFILIATE_URL . 'public/css/noah-affiliate.css',
             array(),
+            NOAH_AFFILIATE_VERSION
+        );
+        
+        wp_enqueue_style(
+            'noah-affiliate-advanced',
+            NOAH_AFFILIATE_URL . 'public/css/noah-affiliate-advanced.css',
+            array('noah-affiliate'),
             NOAH_AFFILIATE_VERSION
         );
         
@@ -78,6 +87,13 @@ class Noah_Affiliate_Public {
             return $content;
         }
         
+        // Don't auto-inject if shortcodes are present
+        if (has_shortcode($content, 'noah_products') || 
+            has_shortcode($content, 'noah_grid') || 
+            has_shortcode($content, 'noah_comparison')) {
+            return $content;
+        }
+        
         $post_id = get_the_ID();
         $product_manager = Noah_Affiliate_Product_Manager::get_instance();
         $products = $product_manager->get_post_products($post_id);
@@ -89,15 +105,26 @@ class Noah_Affiliate_Public {
         // Sort products by position
         uasort($products, array($this, 'sort_by_position'));
         
-        // Render all products
-        $products_html = '';
-        foreach ($products as $instance_id => $product) {
-            $products_html .= $this->render_product($product, $post_id);
+        // Render all products as grid at the end
+        $products_with_urls = array();
+        foreach ($products as $product) {
+            $product['affiliate_url'] = $product_manager->generate_link(
+                $product['network'],
+                $product['product_id'],
+                $product,
+                $post_id
+            );
+            $products_with_urls[] = $product;
         }
+        
+        ob_start();
+        $columns = 3;
+        include NOAH_AFFILIATE_PATH . 'public/templates/product-grid.php';
+        $products_html = ob_get_clean();
         
         // Add products at the end of content by default
         if (!empty($products_html)) {
-            $content .= '<div class="noah-affiliate-products">' . $products_html . '</div>';
+            $content .= $products_html;
         }
         
         return $content;
@@ -228,6 +255,89 @@ class Noah_Affiliate_Public {
         
         ob_start();
         $this->load_template('comparison-table', array('products' => $products));
+        return ob_get_clean();
+    }
+    
+    /**
+     * Products shortcode - show all products from this post
+     * Usage: [noah_products layout="grid|comparison" columns="3"]
+     */
+    public function products_shortcode($atts) {
+        $atts = shortcode_atts(array(
+            'layout' => 'grid',
+            'columns' => '3'
+        ), $atts);
+        
+        $post_id = get_the_ID();
+        $product_manager = Noah_Affiliate_Product_Manager::get_instance();
+        $products = $product_manager->get_post_products($post_id);
+        
+        if (empty($products)) {
+            return '';
+        }
+        
+        // Add affiliate URLs to products
+        foreach ($products as &$product) {
+            $product['affiliate_url'] = $product_manager->generate_link(
+                $product['network'],
+                $product['product_id'],
+                $product,
+                $post_id
+            );
+        }
+        
+        if ($atts['layout'] === 'comparison') {
+            return $this->render_comparison_table($products);
+        } else {
+            return $this->render_grid($products, $atts['columns']);
+        }
+    }
+    
+    /**
+     * Grid shortcode
+     * Usage: [noah_grid columns="3"]
+     */
+    public function grid_shortcode($atts) {
+        $atts = shortcode_atts(array(
+            'columns' => '3'
+        ), $atts);
+        
+        $post_id = get_the_ID();
+        $product_manager = Noah_Affiliate_Product_Manager::get_instance();
+        $products = $product_manager->get_post_products($post_id);
+        
+        if (empty($products)) {
+            return '';
+        }
+        
+        // Add affiliate URLs
+        foreach ($products as &$product) {
+            $product['affiliate_url'] = $product_manager->generate_link(
+                $product['network'],
+                $product['product_id'],
+                $product,
+                $post_id
+            );
+        }
+        
+        return $this->render_grid($products, $atts['columns']);
+    }
+    
+    /**
+     * Render comparison table
+     */
+    private function render_comparison_table($products) {
+        ob_start();
+        include NOAH_AFFILIATE_PATH . 'public/templates/comparison-table-advanced.php';
+        return ob_get_clean();
+    }
+    
+    /**
+     * Render product grid
+     */
+    private function render_grid($products, $columns = 3) {
+        ob_start();
+        include NOAH_AFFILIATE_PATH . 'public/templates/product-grid.php';
         return ob_get_clean();
     }
 }

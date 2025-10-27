@@ -1,0 +1,468 @@
+/**
+ * Noah Affiliate - Advanced Styles
+ * Professional product display like Content Egg
+ */
+
+/* ===== COMPARISON TABLE ===== */
+.noah-comparison-table-wrapper {
+    margin: 30px 0;
+    clear: both;
+}
+
+.noah-comparison-table {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.noah-comparison-row {
+    display: flex;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.noah-comparison-row:last-child {
+    border-bottom: none;
+}
+
+.noah-comparison-cell {
+    flex: 1;
+    padding: 20px;
+    border-right: 1px solid #f0f0f0;
+    text-align: center;
+    position: relative;
+}
+
+.noah-comparison-cell:last-child {
+    border-right: none;
+}
+
+/* Images Row */
+.noah-comparison-images .noah-comparison-cell {
+    padding: 30px 20px;
+    background: #fafafa;
+}
+
+.noah-comparison-image {
+    max-width: 200px;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+}
+
+.noah-no-image {
+    width: 200px;
+    height: 200px;
+    margin: 0 auto;
+    background: #f5f5f5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #999;
+    font-size: 14px;
+}
+
+/* Titles Row */
+.noah-comparison-titles .noah-comparison-cell h3 {
+    font-size: 18px;
+    margin: 0 0 8px 0;
+    line-height: 1.4;
+    color: #333;
+}
+
+.noah-merchant {
+    display: inline-block;
+    font-size: 12px;
+    color: #666;
+    background: #f0f0f0;
+    padding: 3px 8px;
+    border-radius: 3px;
+}
+
+/* Ratings Row */
+.noah-comparison-ratings {
+    background: #fafafa;
+}
+
+.noah-rating {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    font-size: 20px;
+}
+
+.noah-rating .star-full {
+    color: #ffa500;
+}
+
+.noah-rating .star-half {
+    color: #ffa500;
+}
+
+.noah-rating .star-empty {
+    color: #ddd;
+}
+
+.noah-rating .rating-number {
+    font-size: 16px;
+    color: #666;
+    margin-left: 5px;
+}
+
+/* Prices Row */
+.noah-price {
+    font-size: 28px;
+    font-weight: 700;
+    color: #0073aa;
+    margin: 10px 0;
+}
+
+/* Descriptions Row */
+.noah-comparison-descriptions .noah-comparison-cell {
+    text-align: left;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #666;
+}
+
+/* Buttons Row */
+.noah-comparison-buttons {
+    background: #fafafa;
+}
+
+.noah-btn {
+    display: inline-block;
+    padding: 12px 30px;
+    font-size: 16px;
+    font-weight: 600;
+    text-decoration: none;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.noah-btn-primary {
+    background: #0073aa;
+    color: #fff;
+    border: 2px solid #0073aa;
+}
+
+.noah-btn-primary:hover {
+    background: #005177;
+    border-color: #005177;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,115,170,0.3);
+}
+
+.noah-merchant-link {
+    display: block;
+    margin-top: 5px;
+    color: #666;
+    font-size: 12px;
+}
+
+/* Badges */
+.noah-badge {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    padding: 6px 12px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    border-radius: 4px;
+    z-index: 10;
+    letter-spacing: 0.5px;
+}
+
+.noah-badge-best-overall {
+    background: #ffd700;
+    color: #000;
+}
+
+.noah-badge-best-budget {
+    background: #4CAF50;
+    color: #fff;
+}
+
+.noah-badge-best-premium {
+    background: #000;
+    color: #fff;
+}
+
+.noah-badge-editors-choice {
+    background: #e74c3c;
+    color: #fff;
+}
+
+/* ===== PRODUCT GRID ===== */
+.noah-product-grid {
+    display: grid;
+    gap: 25px;
+    margin: 30px 0;
+}
+
+.noah-grid-columns-2 {
+    grid-template-columns: repeat(2, 1fr);
+}
+
+.noah-grid-columns-3 {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+.noah-grid-columns-4 {
+    grid-template-columns: repeat(4, 1fr);
+}
+
+@media (max-width: 1024px) {
+    .noah-grid-columns-3,
+    .noah-grid-columns-4 {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 640px) {
+    .noah-grid-columns-2,
+    .noah-grid-columns-3,
+    .noah-grid-columns-4 {
+        grid-template-columns: 1fr;
+    }
+    
+    .noah-comparison-table {
+        overflow-x: auto;
+    }
+    
+    .noah-comparison-row {
+        flex-wrap: nowrap;
+        min-width: 600px;
+    }
+}
+
+.noah-grid-item {
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #fff;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.noah-grid-item:hover {
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    transform: translateY(-5px);
+}
+
+.noah-grid-image {
+    padding: 20px;
+    background: #fafafa;
+    text-align: center;
+    min-height: 220px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.noah-grid-image img {
+    max-width: 100%;
+    max-height: 200px;
+    width: auto;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+}
+
+.noah-grid-content {
+    padding: 20px;
+}
+
+.noah-grid-content .noah-merchant {
+    margin-bottom: 10px;
+}
+
+.merchant-icon {
+    margin-right: 3px;
+}
+
+.noah-grid-title {
+    font-size: 16px;
+    line-height: 1.4;
+    margin: 10px 0;
+    color: #333;
+    font-weight: 600;
+}
+
+.noah-grid-description {
+    font-size: 13px;
+    color: #666;
+    margin: 15px 0;
+}
+
+.noah-grid-description ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.noah-grid-description li {
+    padding-left: 20px;
+    position: relative;
+    margin-bottom: 8px;
+    line-height: 1.5;
+}
+
+.noah-grid-description li:before {
+    content: "•";
+    position: absolute;
+    left: 0;
+    color: #0073aa;
+    font-weight: bold;
+}
+
+.noah-grid-content .noah-btn {
+    width: 100%;
+    margin-top: 15px;
+    text-align: center;
+}
+
+/* ===== DISCLOSURE ===== */
+.noah-disclosure {
+    text-align: center;
+    margin: 15px 0;
+    color: #999;
+    font-style: italic;
+}
+
+/* ===== PRODUCT CARD (Enhanced) ===== */
+.noah-product-card {
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 25px;
+    margin: 20px 0;
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.noah-product-header {
+    display: flex;
+    gap: 25px;
+    align-items: flex-start;
+}
+
+.noah-product-image {
+    max-width: 200px;
+    height: auto;
+    border-radius: 4px;
+}
+
+.noah-product-content {
+    flex: 1;
+}
+
+.noah-product-title {
+    font-size: 22px;
+    margin: 0 0 15px 0;
+    color: #333;
+    line-height: 1.3;
+}
+
+.noah-network-badge {
+    display: inline-block;
+    font-size: 10px;
+    padding: 3px 8px;
+    background: #f0f0f0;
+    border-radius: 3px;
+    margin-left: 10px;
+    vertical-align: middle;
+}
+
+.noah-product-price {
+    font-size: 32px;
+    font-weight: 700;
+    color: #0073aa;
+    margin: 15px 0;
+}
+
+.noah-product-description {
+    font-size: 15px;
+    line-height: 1.7;
+    color: #555;
+    margin: 15px 0;
+}
+
+.noah-affiliate-link {
+    display: inline-block;
+    padding: 14px 35px;
+    background: #0073aa;
+    color: #fff;
+    text-decoration: none;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 16px;
+    transition: all 0.3s ease;
+    margin-top: 15px;
+}
+
+.noah-affiliate-link:hover {
+    background: #005177;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,115,170,0.3);
+}
+
+.noah-availability-notice {
+    font-weight: 600;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+    .noah-product-header {
+        flex-direction: column;
+    }
+    
+    .noah-product-image {
+        max-width: 100%;
+        margin: 0 auto;
+        display: block;
+    }
+    
+    .noah-price {
+        font-size: 24px;
+    }
+    
+    .noah-comparison-cell {
+        padding: 15px 10px;
+    }
+    
+    .noah-comparison-titles .noah-comparison-cell h3 {
+        font-size: 16px;
+    }
+}
+
+/* ===== LOADING STATE ===== */
+.noah-loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.noah-loading:after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 30px;
+    height: 30px;
+    margin: -15px 0 0 -15px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #0073aa;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
