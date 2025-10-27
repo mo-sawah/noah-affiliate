@@ -89,50 +89,18 @@ class Noah_Affiliate_Public {
         // Sort products by position
         uasort($products, array($this, 'sort_by_position'));
         
-        // Process content
-        $modified_content = $content;
-        $paragraphs = explode('</p>', $content);
-        $insertions = array();
-        
+        // Render all products
+        $products_html = '';
         foreach ($products as $instance_id => $product) {
-            if (!isset($product['position'])) {
-                continue;
-            }
-            
-            $position = $product['position'];
-            $product_html = $this->render_product($product, $post_id);
-            
-            if ($position === 'end' || $position === 'bottom') {
-                // Add to end
-                $modified_content .= $product_html;
-            } elseif ($position === 'top' || $position === 'start') {
-                // Add to beginning
-                $modified_content = $product_html . $modified_content;
-            } elseif (isset($position['position']) && $position['position'] === 'after_paragraph') {
-                $para_index = isset($position['paragraph_index']) ? $position['paragraph_index'] : 0;
-                
-                if (!isset($insertions[$para_index])) {
-                    $insertions[$para_index] = array();
-                }
-                
-                $insertions[$para_index][] = $product_html;
-            }
+            $products_html .= $this->render_product($product, $post_id);
         }
         
-        // Insert products at paragraph positions
-        if (!empty($insertions)) {
-            krsort($insertions); // Reverse order to maintain indices
-            
-            foreach ($insertions as $para_index => $products_html) {
-                if (isset($paragraphs[$para_index])) {
-                    $paragraphs[$para_index] .= '</p>' . implode('', $products_html);
-                }
-            }
-            
-            $modified_content = implode('</p>', $paragraphs);
+        // Add products at the end of content by default
+        if (!empty($products_html)) {
+            $content .= '<div class="noah-affiliate-products">' . $products_html . '</div>';
         }
         
-        return $modified_content;
+        return $content;
     }
     
     /**
